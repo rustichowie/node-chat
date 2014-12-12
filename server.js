@@ -1,5 +1,15 @@
 var mongo = require('mongodb').MongoClient,
-	client = require('socket.io').listen(8081).sockets;
+	express = require('express'),
+	app = express(),
+	http = require('http'),
+	server = http.createServer(app),
+	client = require('socket.io').listen(server).sockets;
+
+server.listen(8081);
+
+app.get('/', function (req, res) {
+res.sendfile(__dirname + '/index.html');
+});
 
 mongo.connect('mongodb://127.0.0.1/chat', function(err, db){
 	if(err) throw err;
