@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Chat</title>
+		<link rel="stylesheet" type="text/css" href="css/main.css">
+	</head>
+	<body>
+		<div class="chat">
+			<input type="text" class="chat-name" placeholder="Enter your name"/>
+			<div class="chat-messages">
+			</div>
+			<textarea class="chat-input" placeholder="type your message.."></textarea>
+			<div class="chat-status">Status: <span>Idle</span></div>
+		</div>
+
+		<script type="text/javascript" src="http://127.0.0.1:8081/socket.io/socket.io.js"></script>
+
+		<script type="text/javascript">
+			(function(){
+				var getNode = function(s){
+					return document.querySelector(s);
+				},
+				status = getNode('.chat-status span'),
+				messages = getNode('.chat-messages'),
+				textarea = getNode('.chat-input'),
+				chatName = getNode('.chat-name'),
+				statusDefault = status.textContent,
+				setStatus = function(s){
+					status.textContent = s;
+
+					if(s !== statusDefault){
+						var delay = setTimeout(function(){
+							setStatus(statusDefault);
+							clearInterval(delay);
+						}, 3000);
+					}
+				};
+
+				try {
+					var socket = io.connect('http://127.0.0.1:8081');
+				} catch(e){
+
+				}
+
+
+				if(socket != undefined){
+
+					socket.on('init', function(data){
+						if(data.length){
+							//Loop
+							for(var i = 0; i < data.length; i++){
+								var message = document.createElement('div');
+								message.setAttribute('class', 'chat-message');
+								message.textContent = data[i].name + ": " + data[i].message;
+
+								//Append to chat
+								messages.appendChild(message);
+								messages.scrollTop = 999999;
+							}	
+						}
+					});
+
+					//Listen for output
+
+					socket.on('output', function(data){
+						if(data.length){
+							//Loop
+							for(var i = 0; i < data.length; i++){
+								var message = document.createElement('div');
+								message.setAttribute('class', 'chat-message');
+								message.textContent = data[i].name + ": " + data[i].message;
+
+								//Append to chat
+								messages.appendChild(message);
+							}	
+						}
+					});
+
+					// Listen for status
+					socket.on('status', function(data){
+						setStatus((typeof data === 'object') ? data.message : data);
+
+						if(data.clear === true){
+							
+							var message = document.createElement('div');
+							message.setAttribute('class', 'chat-message');
+							message.textContent = chatName.value + ": " + textarea.value;
+
+							//Append to chat
+							messages.appendChild(message);
+							messages.scrollTop = 999999;
+							textarea.value = '';
+						}
+					});
+
+					textarea.addEventListener('keydown', function(event){
+							var self = this,
+								name = chatName.value;
+
+							if(event.which === 13 && event.shiftKey === false){
+								socket.emit('input', {
+									name: name,
+									message: self.value
+								});
+								
+								event.preventDefault();
+							}
+
+					});
+
+				}
+			})();
+		</script>
+	</body>
+</html>
